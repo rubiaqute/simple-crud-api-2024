@@ -1,0 +1,19 @@
+{
+  "name": "crud-api",
+  "version": "1.0.0",
+  "scripts": {
+    "start:dev": "nodemon --watch src src/index.ts",
+    "start:prod": "tsc && node dist/index.js",
+    "test": "cross-env NODE_ENV=test jest --testTimeout=10000"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.1",
+    "eslint": "^8.56.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+}
