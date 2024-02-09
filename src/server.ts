@@ -1,5 +1,5 @@
 import * as http from "http";
-import { createUserController, getAllUsersController, getUserController, notifyServerError, notifyWrongUrl } from './users/controllers'
+import { createUserController, getAllUsersController, getUserController, notifyServerError, notifyWrongUrl, updateUserController, deleteUserController } from './users/controllers'
 
 export const server = http.createServer((req, res) => {
     const method = req.method
@@ -23,6 +23,20 @@ export const server = http.createServer((req, res) => {
                     return
                 }
             }
+
+            case "PUT": {
+                if (url?.startsWith('/api/users')) {
+                    getRequestBody(req, res, updateUserController, url.split('/api/users/')?.[1])
+                    return
+                }
+            }
+
+            case "DELETE": {
+                if (url?.startsWith('/api/users')) {
+                    deleteUserController(res, url.split('/api/users/')?.[1])
+                    return
+                }
+            }
         }
 
         notifyWrongUrl(res)
@@ -32,7 +46,7 @@ export const server = http.createServer((req, res) => {
     
 });
 
-const getRequestBody = (req: http.IncomingMessage, res: http.ServerResponse, cb: (body: any, res: http.ServerResponse) => void) => {
+const getRequestBody = (req: http.IncomingMessage, res: http.ServerResponse, cb: (body: any, res: http.ServerResponse, uuid?: string) => void, uuid?: string) => {
     let body = ''
 
     req.on("data", (chunk) => {
@@ -40,6 +54,10 @@ const getRequestBody = (req: http.IncomingMessage, res: http.ServerResponse, cb:
     });
 
     req.on("end", () => {
-        cb(JSON.parse(JSON.stringify(body)), res)
+        try {
+            cb(JSON.parse(body), res, uuid)
+        } catch {
+            notifyServerError(res)
+        }
     })
 }
