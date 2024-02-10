@@ -1,17 +1,31 @@
+import cluster from "cluster";
 import * as http from "http";
 import { createUserController, getAllUsersController, getUserController, notifyServerError, notifyWrongUrl, updateUserController, deleteUserController } from './users/controllers'
+import { setUsers } from "./users/models";
 
 export const route = '/api/users'
 
+
+if (cluster.isWorker) {
+    process.on('message', ({ data }) => setUsers(data));
+}
+
 export const server = http.createServer((req, res) => {
+    if (cluster.isWorker) {
+        console.log(
+            `[Work log] Child server PID:${process.pid} URL: ${req.url} METHOD: ${req.method}`
+        );
+    }
+
     const method = req.method
     const url = req.url
+
     try {
         switch (method) {
             case "GET": {
                 if (url === route) {
                     getAllUsersController(res)
-                    return 
+                    return
                 }
                 if (url?.startsWith(route)) {
                     getUserController(res, url.split(`${route}/`)?.[1])

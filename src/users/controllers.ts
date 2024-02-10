@@ -2,6 +2,7 @@ import { ServerResponse, IncomingMessage } from "http";
 import { getAllUsers, getUser, createUser, updateUser, deleteUser } from './models'
 import { validate as uuidValidate } from 'uuid';
 import { CreateUserPayload, UpdateUserPayload } from "./types";
+import cluster from "cluster";
 
 export const getAllUsersController = (res: ServerResponse) => {
     sendCode(res, 200)
@@ -41,6 +42,10 @@ export const createUserController = (body: CreateUserPayload, res: ServerRespons
         res.end(JSON.stringify({ message: "Some fields are missing" }))
     }
 
+    if (cluster.isWorker) {
+        process.send?.(getAllUsers());
+    }
+
 }
 
 export const updateUserController = (body: UpdateUserPayload, res: ServerResponse, uuid?: string) => {
@@ -60,6 +65,10 @@ export const updateUserController = (body: UpdateUserPayload, res: ServerRespons
         notifyInvalidUuid(res)
     }
 
+    if (cluster.isWorker) {
+        process.send?.(getAllUsers());
+    }
+
 }
 
 export const deleteUserController = (res: ServerResponse, uuid: string) => {
@@ -77,6 +86,10 @@ export const deleteUserController = (res: ServerResponse, uuid: string) => {
 
     } else {
         notifyInvalidUuid(res)
+    }
+
+    if (cluster.isWorker) {
+        process.send?.(getAllUsers());
     }
 }
 

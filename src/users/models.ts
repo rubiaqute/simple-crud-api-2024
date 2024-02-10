@@ -1,7 +1,7 @@
 import { CreateUserPayload, UpdateUserPayload, User } from "./types";
 import { v4 as uuid } from "uuid";
 
-let users: User[] = [
+export let users: User[] = [
     {
         id: "b350e5a8-b158-4a8c-8ffe-051da533b8b8",
         username: "Anna Schmecken",
@@ -11,6 +11,8 @@ let users: User[] = [
 ]
 
 export const getAllUsers = () => users
+
+export const setUsers = (newUsers: User[]) => users = newUsers
 
 export const getUser = (id: string) => {
     const findedUser = users.find((user) => user.id === id)
