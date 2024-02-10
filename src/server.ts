@@ -1,39 +1,41 @@
 import * as http from "http";
 import { createUserController, getAllUsersController, getUserController, notifyServerError, notifyWrongUrl, updateUserController, deleteUserController } from './users/controllers'
 
+export const route = '/api/users'
+
 export const server = http.createServer((req, res) => {
     const method = req.method
     const url = req.url
     try {
         switch (method) {
             case "GET": {
-                if (url === "/api/users") {
+                if (url === route) {
                     getAllUsersController(res)
                     return 
                 }
-                if (url?.startsWith('/api/users')) {
-                    getUserController(res, url.split('/api/users/')?.[1])
+                if (url?.startsWith(route)) {
+                    getUserController(res, url.split(`${route}/`)?.[1])
                     return
                 }
             }
 
             case "POST": {
-                if (url === "/api/users") {
+                if (url === route) {
                     getRequestBody(req, res, createUserController)
                     return
                 }
             }
 
             case "PUT": {
-                if (url?.startsWith('/api/users')) {
-                    getRequestBody(req, res, updateUserController, url.split('/api/users/')?.[1])
+                if (url?.startsWith(route)) {
+                    getRequestBody(req, res, updateUserController, url.split(`${route}/`)?.[1])
                     return
                 }
             }
 
             case "DELETE": {
-                if (url?.startsWith('/api/users')) {
-                    deleteUserController(res, url.split('/api/users/')?.[1])
+                if (url?.startsWith(route)) {
+                    deleteUserController(res, url.split(`${route}/`)?.[1])
                     return
                 }
             }

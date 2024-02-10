@@ -1,5 +1,5 @@
 import supertest from 'supertest'
-import { server } from '../server'
+import { route, server } from '../server'
 
 const notCorrectId = '123'
 
@@ -25,7 +25,7 @@ describe("All the methods have correct validation", () => {
         },
     ])("if we try to create the user without all required fields, we will get the correct code and error", async ({ user }) => {
         const res = await supertest(server)
-            .post(`/api/users`)
+            .post(route)
             .send(user)
 
         expect(res.statusCode).toEqual(400);
@@ -35,7 +35,7 @@ describe("All the methods have correct validation", () => {
 
     it("we'll get the error if we try to get the user with incorrect id", async () => {
         const res = await supertest(server)
-            .get(`/api/users/${notCorrectId}`)
+            .get(`${route}/${notCorrectId}`)
 
         expect(res.statusCode).toEqual(400);
         expect(res.error).toBeTruthy()
@@ -44,7 +44,7 @@ describe("All the methods have correct validation", () => {
 
     it("we'll get the error if we try to delete the user with incorrect id", async () => {
         const res = await supertest(server)
-            .delete(`/api/users/${notCorrectId}`)
+            .delete(`${route}/${notCorrectId}`)
 
         expect(res.statusCode).toEqual(400);
         expect(res.error).toBeTruthy()

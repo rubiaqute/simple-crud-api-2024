@@ -1,12 +1,12 @@
 import supertest from 'supertest'
-import { server } from '../server'
+import { route, server } from '../server'
 
 const notExistentUserId = 'b350e5a8-b158-4a8c-8ffe-051da533b8b9'
 
 describe("Negative scenario for getting, changing and deleting not existent user", () => {
     it("we've got the correct code and error if we try to get the non-existent user", async () => {
         const res = await supertest(server)
-            .get(`/api/users/${notExistentUserId}`)
+            .get(`${route}/${notExistentUserId}`)
 
         expect(res.statusCode).toEqual(404);
         expect(res.error).toBeTruthy()
@@ -15,7 +15,7 @@ describe("Negative scenario for getting, changing and deleting not existent user
 
     it("we've got the correct code and error if we try to delete the non-existent user", async () => {
         const res = await supertest(server)
-            .delete(`/api/users/${notExistentUserId}`)
+            .delete(`${route}/${notExistentUserId}`)
 
         expect(res.statusCode).toEqual(404);
         expect(res.error).toBeTruthy()
@@ -40,7 +40,7 @@ describe("Negative scenario for getting, changing and deleting not existent user
         },
     ])("we've got the correct code and error if we try to change some prop of the non-existent user", async ({ changedProp }) => {
         const res = await supertest(server)
-            .put(`/api/users/${notExistentUserId}`)
+            .put(`${route}/${notExistentUserId}`)
             .send(changedProp)
 
         expect(res.statusCode).toEqual(404);

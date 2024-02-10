@@ -1,5 +1,5 @@
 import supertest from 'supertest'
-import { server } from '../server'
+import { route, server } from '../server'
 import { User } from '../users/types';
 
 const newUser = {
@@ -12,7 +12,7 @@ let userId =''
 describe("Positive scenario for creating, changing and deleting user", () => {
     it("we can create user and get correct code and response body", async () => {
         const res = await supertest(server)
-            .post("/api/users")
+            .post(route)
             .send(newUser);
 
         userId = res.body.id
@@ -23,7 +23,7 @@ describe("Positive scenario for creating, changing and deleting user", () => {
 
     it("the created user should be in the list of users", async () => {
         const res = await supertest(server)
-            .get(`/api/users`)
+            .get(route)
 
         const users = res.body as User[]
 
@@ -49,7 +49,7 @@ describe("Positive scenario for creating, changing and deleting user", () => {
     },
     ])("we can successfully change users props and get correct code and response body", async ({ changedProp }) => {
         const res = await supertest(server)
-            .put(`/api/users/${userId}`)
+            .put(`${route}/${userId}`)
             .send(changedProp)
 
         const user = res.body as User
@@ -60,14 +60,14 @@ describe("Positive scenario for creating, changing and deleting user", () => {
 
     it("we can delete user and get the correct code", async () => {
         const res = await supertest(server)
-            .delete(`/api/users/${userId}`)
+            .delete(`${route}/${userId}`)
 
         expect(res.statusCode).toEqual(204);
     });
 
     it("the deleted user should not be in the list of users", async () => {
         const res = await supertest(server)
-            .get(`/api/users`)
+            .get(route)
 
         const users = res.body as User[]
 
