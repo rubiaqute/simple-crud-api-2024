@@ -1,11 +1,12 @@
 import { ServerResponse, IncomingMessage } from "http";
 import { getAllUsers, getUser, createUser, updateUser, deleteUser } from './models'
 import { validate as uuidValidate } from 'uuid';
-import { CreateUserPayload, UpdateUserPayload } from "./types";
+import { CODES, CreateUserPayload,  UpdateUserPayload } from "./types";
 import cluster from "cluster";
+import { getRequestBody,  notifyInvalidPayload, notifyInvalidUuid, notifyNotFoundUser, sendBody, sendCode } from "../utils";
 
 export const getAllUsersController = (res: ServerResponse) => {
-    sendCode(res, 200)
+    sendCode(res, CODES.ok)
     sendBody(res, getAllUsers())
     res.end();
 }
@@ -17,7 +18,7 @@ export const getUserController = (res: ServerResponse, uuid: string) => {
         const user = getUser(uuid)
 
         if (user) {
-            sendCode(res, 200)
+            sendCode(res, CODES.ok)
             sendBody(res, user)
             res.end()
         } else {
@@ -29,17 +30,24 @@ export const getUserController = (res: ServerResponse, uuid: string) => {
     }
 }
 
-export const createUserController = (body: CreateUserPayload, res: ServerResponse) => {
+export const createUserController = (req: IncomingMessage, res: ServerResponse) => {
+    getRequestBody(req, res, createUserCallBack)
+}
+
+export const updateUserController = (req: IncomingMessage, res: ServerResponse, uuid: string) => {
+    getRequestBody(req, res, updateUserCallBack, uuid)
+}
+
+const createUserCallBack = (body: CreateUserPayload, res: ServerResponse) => {
     const { hobbies, username, age } = body
 
-    if (hobbies && username && age) {
+    if (hobbies && username && age && isValidPayload(body)) {
         const newUser = createUser(body)
-        sendCode(res, 201)
+        sendCode(res, CODES.created)
         sendBody(res, newUser)
         res.end()
-    } else  {
-        sendCode(res, 400)
-        res.end(JSON.stringify({ message: "Some fields are missing" }))
+    } else {
+        notifyInvalidPayload(res)
     }
 
     if (cluster.isWorker) {
@@ -48,17 +56,22 @@ export const createUserController = (body: CreateUserPayload, res: ServerRespons
 
 }
 
-export const updateUserController = (body: UpdateUserPayload, res: ServerResponse, uuid?: string) => {
+const updateUserCallBack = (body: UpdateUserPayload, res: ServerResponse, uuid?: string) => {
     const isValidUuid = uuidValidate(uuid || '')
     if (isValidUuid) {
-        const updatedUser = updateUser(uuid || '', body)
 
-        if (updatedUser) {
-            sendCode(res, 200)
-            sendBody(res, updatedUser)
-            res.end() 
+        if (isValidPayload(body)) {
+            const updatedUser = updateUser(uuid || '', body)
+
+            if (updatedUser) {
+                sendCode(res, CODES.ok)
+                sendBody(res, updatedUser)
+                res.end()
+            } else {
+                notifyNotFoundUser(res)
+            }
         } else {
-            notifyNotFoundUser(res)
+            notifyInvalidPayload(res)
         }
 
     } else {
@@ -78,7 +91,7 @@ export const deleteUserController = (res: ServerResponse, uuid: string) => {
         const isSuccess = deleteUser(uuid)
 
         if (isSuccess) {
-            sendCode(res, 204)
+            sendCode(res, CODES.noContent)
             res.end()
         } else {
             notifyNotFoundUser(res)
@@ -93,30 +106,16 @@ export const deleteUserController = (res: ServerResponse, uuid: string) => {
     }
 }
 
-const sendCode = (res: ServerResponse, code: number) => {
-    res.writeHead(code, { "Content-Type": "application/json" });
+export const isValidPayload = (payload: UpdateUserPayload)=> {
+    const props = ['hobbies', 'username', 'age']
+    const isOnlyKnownProps = Object.keys(payload).every((prop) => props.includes(prop))
+
+    const {username, hobbies, age} = payload
+    const isCorrectTypeHobbies = !hobbies || (Array.isArray(hobbies) && hobbies.every((hobby)=> typeof hobby === 'string'))
+    const isCorrectTypeAge = (age === undefined) || (typeof age === 'number')
+    const isCorrectTypeUserName = !username || (typeof username === 'string')
+
+    return isOnlyKnownProps && isCorrectTypeHobbies && isCorrectTypeAge && isCorrectTypeUserName
 }
 
-const sendBody = (res: ServerResponse, body:unknown) => {
-    res.write(JSON.stringify(body));
-}
 
-const notifyInvalidUuid = (res: ServerResponse) => {
-    sendCode(res, 400)
-    res.end(JSON.stringify({ message: "Provided id is not valid uuid" }))
-}
-
-const notifyNotFoundUser = (res: ServerResponse) => {
-    sendCode(res, 404)
-    res.end(JSON.stringify({ message: "User is not found" }))
-}
-
-export const notifyServerError = (res: ServerResponse) => {
-    sendCode(res, 500)
-    res.end(JSON.stringify({ message: "Server error" }))
-}
-
-export const notifyWrongUrl = (res: ServerResponse) => {
-    sendCode(res, 404)
-    res.end(JSON.stringify({ message: "Url not found" }))
-}

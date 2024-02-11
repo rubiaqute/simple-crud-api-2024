@@ -7,33 +7,34 @@ dotenv.config({ path: "./.env" });
 
 import { server } from './server'
 import { getAllUsers, setUsers } from "./users/models";
+import { ERRORS } from "./users/types";
 
 const PORT = +(process.env.PORT || '')
 
 if (cluster.isPrimary) {
-    let currentWorker = 1;
-    const numCPUs = os.cpus().length;
+    let currentWorkerId = 1;
+    const cpusList = os.cpus()
 
     process.on('uncaughtException', () => {
-        console.log('Something went wrong');
+        console.log(ERRORS.childServerError);
     });
 
-    for (let i = 0; i < numCPUs; i++) {
-        const childPort = PORT + i + 1
+    cpusList.forEach((cpu, index)=> {
+        const childPort = PORT + index + 1
         const worker = cluster.fork({ port: childPort });
         worker.on('message', (data) => setUsers(data))
-    }
+    })
 
     const mainServer = http.createServer((req, res) => {
-        cluster.workers?.[currentWorker]?.send({ data: getAllUsers() });
-        const forChildReq = http.request({ port: PORT + currentWorker, path: req.url, method: req.method });
+        cluster.workers?.[currentWorkerId]?.send({ data: getAllUsers() });
+        const childRequest = http.request({ port: PORT + currentWorkerId, path: req.url, method: req.method });
 
-        forChildReq.on('response', (childRes) => {
+        childRequest.on('response', (childRes) => {
             res.statusCode = childRes.statusCode!;
             childRes.pipe(res);
-            currentWorker = currentWorker >= numCPUs ? 1 : ++currentWorker;
+            currentWorkerId = ((currentWorkerId + 1) % cpusList.length) + 1
         });
-        req.pipe(forChildReq);
+        req.pipe(childRequest);
     });
 
     mainServer.listen(PORT, () => {
@@ -41,5 +42,5 @@ if (cluster.isPrimary) {
     });
 } else {
     const childPort = PORT + (cluster.worker?.id ?? 0)
-    server.listen(childPort, () => console.log(`Child port started at ${childPort}`));
+    server.listen(childPort, () => console.log(`Child server started and listen port ${childPort}`));
 }

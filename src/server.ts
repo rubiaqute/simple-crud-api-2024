@@ -1,7 +1,9 @@
 import cluster from "cluster";
 import * as http from "http";
-import { createUserController, getAllUsersController, getUserController, notifyServerError, notifyWrongUrl, updateUserController, deleteUserController } from './users/controllers'
+import { createUserController, getAllUsersController, getUserController, updateUserController, deleteUserController } from './users/controllers'
 import { setUsers } from "./users/models";
+import { METHODS } from "./users/types";
+import { notifyServerError, notifyWrongUrl } from "./utils";
 
 export const route = '/api/users'
 
@@ -12,8 +14,9 @@ if (cluster.isWorker) {
 
 export const server = http.createServer((req, res) => {
     if (cluster.isWorker) {
+        const childPort = +(process.env.PORT || '') + (cluster.worker?.id ?? 0)
         console.log(
-            `[Work log] Child server PID:${process.pid} URL: ${req.url} METHOD: ${req.method}`
+            `[Work log] Child server Port:${childPort} URL: ${req.url} METHOD: ${req.method}`
         );
     }
 
@@ -22,7 +25,7 @@ export const server = http.createServer((req, res) => {
 
     try {
         switch (method) {
-            case "GET": {
+            case METHODS.get: {
                 if (url === route) {
                     getAllUsersController(res)
                     return
@@ -33,21 +36,21 @@ export const server = http.createServer((req, res) => {
                 }
             }
 
-            case "POST": {
+            case METHODS.post: {
                 if (url === route) {
-                    getRequestBody(req, res, createUserController)
+                    createUserController(req, res)
                     return
                 }
             }
 
-            case "PUT": {
+            case METHODS.put: {
                 if (url?.startsWith(route)) {
-                    getRequestBody(req, res, updateUserController, url.split(`${route}/`)?.[1])
+                    updateUserController(req, res, url.split(`${route}/`)?.[1])
                     return
                 }
             }
 
-            case "DELETE": {
+            case METHODS.delete: {
                 if (url?.startsWith(route)) {
                     deleteUserController(res, url.split(`${route}/`)?.[1])
                     return
@@ -62,18 +65,3 @@ export const server = http.createServer((req, res) => {
     
 });
 
-const getRequestBody = (req: http.IncomingMessage, res: http.ServerResponse, cb: (body: any, res: http.ServerResponse, uuid?: string) => void, uuid?: string) => {
-    let body = ''
-
-    req.on("data", (chunk) => {
-        body += chunk.toString();
-    });
-
-    req.on("end", () => {
-        try {
-            cb(JSON.parse(body), res, uuid)
-        } catch {
-            notifyServerError(res)
-        }
-    })
-}

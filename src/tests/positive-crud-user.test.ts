@@ -1,6 +1,6 @@
 import supertest from 'supertest'
 import { route, server } from '../server'
-import { User } from '../users/types';
+import { CODES, User } from '../users/types';
 
 const newUser = {
     username: "Test User",
@@ -17,7 +17,7 @@ describe("Positive scenario for creating, changing and deleting user", () => {
 
         userId = res.body.id
 
-        expect(res.statusCode).toEqual(201);
+        expect(res.statusCode).toEqual(CODES.created);
         expect(res.body).toMatchObject(newUser);
     });
 
@@ -27,7 +27,7 @@ describe("Positive scenario for creating, changing and deleting user", () => {
 
         const users = res.body as User[]
 
-        expect(res.statusCode).toEqual(200);
+        expect(res.statusCode).toEqual(CODES.ok);
         expect(users.find((user) => user.id === userId)).toBeTruthy()
     });
 
@@ -44,7 +44,7 @@ describe("Positive scenario for creating, changing and deleting user", () => {
     },
     {
         changedProp: {
-            userName: "Another Test User"
+            username: "Another Test User"
         },
     },
     ])("we can successfully change users props and get correct code and response body", async ({ changedProp }) => {
@@ -54,7 +54,7 @@ describe("Positive scenario for creating, changing and deleting user", () => {
 
         const user = res.body as User
 
-        expect(res.statusCode).toEqual(200);
+        expect(res.statusCode).toEqual(CODES.ok);
         expect(user).toMatchObject(changedProp)
     });
 
@@ -62,7 +62,7 @@ describe("Positive scenario for creating, changing and deleting user", () => {
         const res = await supertest(server)
             .delete(`${route}/${userId}`)
 
-        expect(res.statusCode).toEqual(204);
+        expect(res.statusCode).toEqual(CODES.noContent);
     });
 
     it("the deleted user should not be in the list of users", async () => {
