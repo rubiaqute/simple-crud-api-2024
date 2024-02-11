@@ -22,7 +22,10 @@ if (cluster.isPrimary) {
     cpusList.forEach((cpu, index)=> {
         const childPort = PORT + index + 1
         const worker = cluster.fork({ port: childPort });
-        worker.on('message', (data) => setUsers(data))
+        worker.on('message', (data) => {
+            setUsers(data)
+            cpusList.forEach((_, i) => cluster.workers?.[i + 1]?.send({ data: getAllUsers() }))
+        })
     })
 
     const mainServer = http.createServer((req, res) => {
